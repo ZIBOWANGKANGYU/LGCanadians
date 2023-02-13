@@ -13,7 +13,6 @@ library(tidyverse)
 
 setwd("~/Documents/rshiny/example1/MyApp/")
 source("data_cleaning.R")
-source("create_chart.R")
 
 
 # Define UI for application that draws a histogram
@@ -24,11 +23,14 @@ ui <- fluidPage(
 
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
-       selectInput("var", "Summary variable", summary_vars),
+      sidebarPanel(
+       selectInput("demo", "Summary variable", summary_vars),
+       checkboxGroupInput("geo", "Please select regions", regions)),
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotlyOutput("distPlot")
+           plotlyOutput("distPlot"),
+           textOutput("text")
         )
     )
 )
@@ -38,13 +40,21 @@ server <- function(input, output) {
 
     output$distPlot <- renderPlotly({
         # generate bins based on input$bins from ui.R
-        summary_var <- input$var
+        
+        data_cleaned <- reactive(filter_data(data, input$geo, input$demo))
 
-        if (summary_var == "Race"){
-          ggplotly(chart_race) %>% config(displayModeBar = FALSE)
-        } else if (summary_var == "Education"){
-          ggplotly(chart_education) %>% config(displayModeBar = FALSE)
-        }
+        data_cleaned() %>%
+          ggplot(aes(y = GEO, x = thousands)) +
+          geom_col(aes(fill = `Sexual orientation`), position = position_dodge()) +
+          facet_grid(cols = vars(Demographic), scales = "free_x") + 
+          labs(title = "Lesbian and Gay Canadians") +
+          theme(axis.title.y = element_blank(),
+                legend.title = element_blank())
+    })
+    
+    output$text <- renderText({
+      region_var <- input$geo
+      return(region_var)
     })
 }
 
