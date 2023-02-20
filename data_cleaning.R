@@ -80,9 +80,9 @@ filter_data <- function(data, geo_names, demo_var){
         "Quebec"
       ),
       Demographic = fct_relevel(Demographic, "Visible minority", "Post-secondary education", "Total population"),
-      `Sexual orientation` = fct_relevel(`Sexual orientation`, "Lesbian or gay", "Heterosexual")
+      `Sexual orientation` = fct_relevel(`Sexual orientation`, "Lesbian or gay", "Heterosexual"),
+      Population = paste0(thousands, "k")
     ) %>%
-    mutate() %>%
     drop_na()
   
   data_percent <- data %>%
@@ -104,10 +104,11 @@ filter_data <- function(data, geo_names, demo_var){
   return(list(data_bars = data, data_percent = data_percent, data_x_lim_dict = data_x_lim_dict))
 }
 
-filter_data_by_age <- function(data_by_age, demo_var,){
+filter_data_by_age <- function(data_by_age, demo_var){
  if (demo_var == "Race"){
    data_by_age <- data_by_age %>%
-     mutate(`Sexual orientation` = fct_relevel(`Sexual orientation`, "Lesbian or gay", "Heterosexual"))
+     mutate(`Sexual orientation` = fct_relevel(`Sexual orientation`, "Lesbian or gay", "Heterosexual"),
+            Population = paste0(round(100 * age_prop, 0), "%"))
    return(data_by_age)
  } else {
    return(NULL)
