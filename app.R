@@ -29,8 +29,7 @@ ui <- fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotlyOutput("distPlot"),
-           textOutput("text")
+           plotlyOutput("distPlot")
         )
     )
 )
@@ -42,19 +41,15 @@ server <- function(input, output) {
         # generate bins based on input$bins from ui.R
         
         data_cleaned <- reactive(filter_data(data, input$geo, input$demo))
+        chart_title <- reactive(set_title(input$demo))
 
-        data_cleaned() %>%
-          ggplot(aes(y = GEO, x = thousands)) +
-          geom_col(aes(fill = `Sexual orientation`), position = position_dodge()) +
+        ggplot(data = data_cleaned()[["data_bars"]], aes(y = GEO)) +
+          geom_col(aes(x = thousands, fill = `Sexual orientation`), position = position_dodge()) +
+          geom_text(data = data_cleaned()[["data_percent"]], aes(x = 0.98 * data_cleaned()[["data_x_lim_dict"]][Demographic], label = lg_percent)) +
           facet_grid(cols = vars(Demographic), scales = "free_x") + 
-          labs(title = "Lesbian and Gay Canadians") +
+          labs(title = chart_title()) +
           theme(axis.title.y = element_blank(),
                 legend.title = element_blank())
-    })
-    
-    output$text <- renderText({
-      region_var <- input$geo
-      return(region_var)
     })
 }
 
