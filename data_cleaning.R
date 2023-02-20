@@ -1,4 +1,3 @@
-setwd("~/Documents/rshiny/example1/MyApp/")
 data_raw <- read_csv("data/13100817.csv")
   
 data <- data_raw %>%
@@ -27,11 +26,30 @@ data <- data_raw %>%
 data_by_age <- 
   data_raw %>%
   filter(
-    `Selected Sociodemographic characteristics` == "Total population",
+    `Selected Sociodemographic characteristics` %in% c(
+      "Total population",
+      "Visible minority"
+      ),
     Characteristics  == "Number of persons",
     Sex == "Both sexes",
     GEO == "Canada"
-  )
+  ) %>%
+  rename(Demographic = `Selected Sociodemographic characteristics`) %>%
+  filter(`Sexual orientation` %in% c("Heterosexual", "Lesbian or gay")) %>%
+  mutate(`Sexual orientation` = fct_relevel(`Sexual orientation`, "Heterosexual", "Lesbian or gay")) %>%
+  select(GEO, `Sexual orientation`, Demographic, `Age group`, VALUE)
+
+data_by_age_all <- data_by_age %>%
+  filter(`Age group` == "Total, 15 years and over") %>%
+  rename(VALUE_ALL = VALUE) %>%
+  select(-`Age group`)
+
+data_by_age <- data_by_age %>%
+  left_join(data_by_age_all, by = c("GEO", "Sexual orientation", "Demographic")) %>%
+  filter(`Age group` != "Total, 15 years and over") %>%
+  mutate(`Age group` = fct_relevel(`Age group`, "15 to 24 years", "25 to 64 years", "65 years and over"),
+         age_prop = VALUE / VALUE_ALL)
+  
 
 filter_data <- function(data, geo_names, demo_var){
   
@@ -84,6 +102,16 @@ filter_data <- function(data, geo_names, demo_var){
   data_x_lim_dict <- set_names(data_x_lim[["max_thousand"]], data_x_lim[["Demographic"]])
   
   return(list(data_bars = data, data_percent = data_percent, data_x_lim_dict = data_x_lim_dict))
+}
+
+filter_data_by_age <- function(data_by_age, demo_var,){
+ if (demo_var == "Race"){
+   data_by_age <- data_by_age %>%
+     mutate(`Sexual orientation` = fct_relevel(`Sexual orientation`, "Lesbian or gay", "Heterosexual"))
+   return(data_by_age)
+ } else {
+   return(NULL)
+ }
 }
 
 set_title <- \(demo_var)if_else(demo_var == "Race", "Proportion of Lesbian and Gay Canadians by Minority Status", "Proportion of Lesbian and Gay Canadians by Education")

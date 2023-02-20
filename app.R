@@ -25,11 +25,13 @@ ui <- fluidPage(
     sidebarLayout(
       sidebarPanel(
        selectInput("demo", "Summary variable", summary_vars),
-       checkboxGroupInput("geo", "Please select regions", regions)),
+       checkboxGroupInput("geo", "Please select regions", regions),
+       uiOutput("showage")),
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotlyOutput("distPlot")
+           plotlyOutput("distPlot"),
+           plotlyOutput("agePlot")
         )
     )
 )
@@ -38,8 +40,7 @@ ui <- fluidPage(
 server <- function(input, output) {
 
     output$distPlot <- renderPlotly({
-        # generate bins based on input$bins from ui.R
-        
+
         data_cleaned <- reactive(filter_data(data, input$geo, input$demo))
         chart_title <- reactive(set_title(input$demo))
 
@@ -50,6 +51,26 @@ server <- function(input, output) {
           labs(title = chart_title()) +
           theme(axis.title.y = element_blank(),
                 legend.title = element_blank())
+    })
+    
+    output$showage <- renderUI({
+      if (input$demo == "Race") {
+        selectInput("showage_race", "Show age distribution?", c("Yes", "No"))
+      }
+    })
+    
+    output$agePlot <- renderPlotly({
+      req(input$showage_race == "Yes" & input$demo == "Race")
+      data_cleaned_by_age <- reactive(filter_data_by_age(data_by_age, input$demo))
+      
+      ggplot(data = data_cleaned_by_age(), aes(x = `Age group`)) +
+        geom_col(aes(y = age_prop, fill = `Sexual orientation`), position = position_dodge()) +
+        scale_y_continuous(labels = scales::percent) +
+        facet_grid(cols = vars(Demographic)) + 
+        labs(title = "Age distribution of lesbian and gay Canadians") +
+        theme(axis.title.y = element_blank(),
+              legend.title = element_blank())
+      
     })
 }
 
